@@ -43,6 +43,22 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
 .receipt{background:var(--paper);color:var(--paperink);padding:16px;border-radius:4px;font-family:"Barlow Condensed",sans-serif;font-size:20px;border-top:6px dotted var(--accent)}
 .receipt .big{font-size:44px}.receipt p{margin:2px 0}.change{font-size:34px;color:var(--ok)}
+.card.auto{animation:up .35s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.done{text-align:center;margin-bottom:8px}
+.ring{stroke-dasharray:151;stroke-dashoffset:151;animation:dr .5s .1s ease-out forwards}
+.tick{stroke-dasharray:40;stroke-dashoffset:40;animation:dr .35s .5s ease-out forwards}
+@keyframes dr{to{stroke-dashoffset:0}}
+.receipt.print{animation:pr .8s .2s steps(16,end) both}
+@keyframes pr{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}
+.card.auto.leave .receipt{transition:transform .5s ease-in,opacity .5s;transform:translateY(-120px) rotate(-5deg);opacity:0}
+.card.auto.leave{transition:opacity .5s .1s;opacity:0}
+#sheet{transition:opacity .5s}#sheet.fade{opacity:0}
+@media (prefers-reduced-motion:reduce){.card.auto,.ring,.tick,.receipt.print{animation:none;stroke-dashoffset:0}}
+.wait{text-align:center;padding:12px 0 18px}
+.pulse{width:84px;height:84px;border-radius:50%;margin:0 auto 14px;background:var(--accent);color:var(--accent);animation:pl 1s ease-out infinite}
+@keyframes pl{from{box-shadow:0 0 0 0 currentColor}to{box-shadow:0 0 0 38px transparent}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
 </style>
 </head>
 <body>
@@ -53,17 +69,20 @@ button:disabled{opacity:.45;cursor:not-allowed}
 var FARES=[{id:"single",name:"Single",sub:"Ayrshire £2 cap",p:200},{id:"return",name:"Return",sub:"placeholder fare",p:400},{id:"day",name:"DayRider",sub:"placeholder fare",p:550}];
 var USERS={"101":"1d8345c829892451a36c513ce4c57ec6972de5bdf58cc236701126a0e81257bd"}; // SHA-256 of "id:pin"
 // Routes from public Stagecoach West Scotland timetable data. Stops are real but sequence is approximate; null = termini only.
+function px(p,a){return a.map(function(x){return p+x})}
 var ST={
 "1":["Dunlop Terrace","Robertson Crescent","Churchill Crescent","Craigie Way","Campbell Court","Beech Grove","Craigie Lea","Craigie Way (2)","Craigie Road","Craigie Way (3)","Fire Station","Railway Station","Killoch Place","Carrick Street","Town Hall","Fullarton Street","Burns Statue Square","Ashgrove Street","Castlehill Road","Dongola Road","Lothian Road","Leslie Crescent","Mount Oliphant Place","Lochlea Drive","Glencairn Road","Glenconner Place","Armour Drive","Forehill Road","Holmston, Shavin Brae","Masonhill Road","Castlehill, Alderbank","Crofthead Road","Castlehill, Masonhill Road"],
-"2":["Fullarton Street","Carrick Street","Town Hall","Crown Street","Waggon Road","Elmbank Street","Newton-On-Ayr, Tig Road","Newton-On-Ayr, West Sanquhar Road","Newton Primary School","Police Station","Cathcart Street"],
+"2":["Fullarton Street","Kyle Street","Carrick Street","Town Hall","Crown Street","Waggon Road","Elmbank Street"].concat(px("Newton-On-Ayr, ",["Tig Road","Lansdowne Road","Bellesleyhill Road"]),px("Heathfield, ",["Woodfield Crescent","Woodfield Avenue","Marchfield Road","Lilybank Road"]),px("Prestwick, ",["Bruce Avenue","Kingscroft Road","Brandon Gardens","Grangemuir Road","St Quivox Road","Kyle Street","Station Road","Caelaverock Road","Merrick Avenue","Manson Avenue","St Ninians School","Sanquhar Avenue","Raith Avenue","Carnell Crescent","Outdale Avenue","Underwood Road","Biggart Hospital","Fairview","Calvinston Road"]),px("Heathfield, ",["Ardfin Road","Moor Park Place","Parks Garage","Asda Superstore","Parks Garage (2)","Mosside Road","Heathpark","Heathfield Road","Ettrick Place","Tweed Street","East Park Road"]),px("Newton-On-Ayr, ",["Cambuslea Road","St Georges Road","West Sanquhar Road"]),px("Whitletts, ",["Walker Road (40)","Gould Street","Walker Road","Hawkhill Avenue","Craigie Road"]),["Newton Primary School","Police Station","Cathcart Street","Fullarton Street (end)"]),
 "2A":["Fullarton Street","Citadel Place","Churchill Tower","Glenford Place","Cromwell Road","Cassillis Street","Carrick Street"],
 "4":["Ayr Bus Station","Newton-On-Ayr, Tig Road","Newton-On-Ayr, McCalls Avenue","Monkton, Dow Avenue","Monkton, Whiteside Drive","Monkton, Greenknowne Park","Monkton, Dutch House Roundabout","Monkton, Burnside Road","Fenwick, Glaister Bridge","Kilmarnock Bus Station","Glasgow Buchanan Bus Station"],
+"3":["Snowdrop Square","Kincaidston, Cornhill","Cornhill","Kincaidston Drive (68)","Sorrel Drive","Kincaidston Drive (26)","Queen Margaret Academy","Birch Road","Peggieshill Road","Forest Way","Castlehill, Belmont Road","Lochlea Drive","Castlehill Crescent","Belmont Avenue","Inverkar Road","Ashgrove Street","Killoch Place","Kyle Street","Newmarket Street","Police Station","Newton Primary School","Whitletts, Burnett Terrace","Whitletts, Hawkhill Avenue","Whitletts, Walker Road","Whitletts, Galloway Avenue","McLean Street","Ferguson Street","Cowan Crescent","Sloan Street","Thomson Street","Braeside","Glenmuir Place","James Brown Avenue","Low Road","Dalmilling, Thorneyflat Street","Thornyflat Road","Thorneyflat Drive","Harthall","Dalmilling Drive","Westwood Avenue","Braehead Avenue","Galloway Avenue (return)","Wills Road","Walker Road (return)","Hawkhill Avenue (return)","Craigie Road","Newton Primary School (return)","Police Station (return)","Cathcart Street","Carrick Street","Burns Statue Square","Ashgrove Street (return)","Inverkar Road (return)","Belmont Avenue (return)","Castlehill Crescent (return)","Ellisland Square","Belmont Road","Forest Way (return)","Peggieshill Road (return)","Birch Road (return)","Dalmellington Road","Kincaidston Drive (return)","Sorrel Drive (return)","Cornhill (return)","Cranesbill Court","Snowdrop Square (end)"],
+"6":["Carrick Street","Burns Statue Square","Ashgrove Street","Kyle Street","Newmarket Street","Police Station","Newton Primary School"].concat(px("Whitletts, ",["Burnett Terrace","Hawkhill Avenue (near)","Hawkhill Avenue","Walker Road (near)","Walker Road (29)","Wilson Street"]),px("Newton-On-Ayr, ",["Britannia Place","St Georges Road","Cambuslea Road"]),px("Heathfield, ",["East Park Road","Tweed Street","Stewart Road","Heathfield Road","Heathpark","Mosside Road","Parks Garage","Asda Superstore","Parks Garage (2)","Moor Park Place","Ardfin Road"]),px("Prestwick, ",["Calvinston Road","Fairview","Moorefield Road","Rowallan Crescent","Outdale Avenue","Sanquhar Avenue","Raith Avenue","Sanquhar Avenue (2)","Adamton Road","Sherwood Road","Shaw Road","Newdykes Road","McNeill Avenue","Merrick Avenue","Berelands Road","The Cross","Saunterne Road","Gardiner Street","St Quivox Road","Southpark Avenue","Meadowbank Lane","Mansfield Road","Crandleyhill Road","Waterloo Road"]),px("Heathfield, ",["Pleasantfield Road","Woodfield Avenue","Kirkholm Avenue"]),px("Newton-On-Ayr, ",["Alderston Avenue","Northfield Avenue","McCalls Avenue"]),["Waggon Road (2)","Waggon Road","Crown Street","Cathcart Street","Carrick Street (end)"]),
 "302":["Prestwick, Carnell Crescent","Dunlop Terrace","Robertson Crescent","Churchill Crescent","Craigie Way","Campbell Court","Beech Grove","Craigie Lea","Craigie Road","Fire Station","Railway Station","Killoch Place","Newton-On-Ayr, West Sanquhar Road"],
 "306":["Newmarket Street","Police Station","Newton Primary School","Whitletts, Burnett Terrace","Whitletts, Hawkhill Avenue","Whitletts, Walker Road","Newton-On-Ayr, Britannia Place","St Georges Road","Cambuslea Road","Heathfield, East Park Road","Heathfield, Stewart Road","Heathfield, Mosside Road","Parks Garage","Alderston Avenue","Northfield Avenue","McCalls Avenue","Waggon Road","Crown Street","Cathcart Street","Carrick Street","Fullarton Street"]
 };
 ST.X77K=ST["4"];ST.X77=ST["4"];
-var RT=[["1","Masonhill – Hayhill"],["2","Carrick Street circular"],["2A","Town Centre – Citadel Leisure Centre"],["4","Glasgow Buchanan – Ayr"],["6","Boswell Park circular"],["9","Ayr – Doonfoot"],["14","Ayr Hospital – Irvine"],["42","Ayr – Muirkirk"],["42A","Ayr – Cumnock"],["X42","Ayr – Muirkirk (express)"],["43","Ayr – New Cumnock"],["43A","Ayr – Annbank"],["52","Ayr – Bellsbank"],["58","Ayr – Girvan"],["60","Ayr – Girvan"],["61","Ayr – Dunure"],["97","Ayr – Craig Tara"],["301","Fullarton Street – Holmston"],["302","Prestwick – Ayr"],["306","Marchburn – Hillfoot Road"],["343","Ayr – New Cumnock"],["352","Ayr – Burnton"],["358","Ayr – Stranraer"],["360","Ayr – Stranraer"],["585","Largs – Ayr"],["X77","Hillhead – Alloway"],["X77K","Glasgow – Ayr"]];
-var ENDS={"1":["Dunlop Terrace","Castlehill Masonhill Road"],"6":["Boswell Park","Boswell Park"],"9":["Ayr","Doonfoot"],"14":["Ayr Hospital","Irvine High Street"],"42":["Ayr Bus Station","Muirkirk"],"42A":["Ayr Bus Station","Cumnock"],"X42":["Ayr Bus Station","Muirkirk"],"43":["Ayr Bus Station","New Cumnock"],"43A":["Ayr Bus Station","Annbank"],"52":["Ayr Bus Station","Bellsbank"],"58":["Ayr Bus Station","Girvan"],"60":["Ayr Bus Station","Girvan"],"61":["Ayr Bus Station","Dunure"],"97":["Ayr Bus Station","Craig Tara"],"301":["Fullarton Street","Holmston"],"343":["Ayr Bus Station","New Cumnock"],"352":["Ayr Bus Station","Burnton"],"358":["Ayr Bus Station","Stranraer"],"360":["Ayr Bus Station","Stranraer"],"585":["Largs","Ayr Bus Station"],"X77":["Alloway Burns Museum","Hillhead University"]};
+var RT=[["1","Masonhill – Hayhill"],["2","Carrick Street circular (via Prestwick)"],["2A","Town Centre – Citadel Leisure Centre"],["3","Snowdrop Square circular"],["3B","Kincaidston – James Brown Avenue"],["4","Glasgow Buchanan – Ayr"],["6","Boswell Park circular (via Prestwick)"],["9","Ayr – Doonfoot"],["14","Ayr Hospital – Irvine"],["42","Ayr – Muirkirk"],["42A","Ayr – Cumnock"],["X42","Ayr – Muirkirk (express)"],["43","Ayr – New Cumnock"],["43A","Ayr – Annbank"],["52","Ayr – Bellsbank"],["58","Ayr – Girvan"],["60","Ayr – Girvan"],["61","Ayr – Dunure"],["97","Ayr – Craig Tara"],["301","Fullarton Street – Holmston"],["302","Prestwick – Ayr"],["306","Marchburn – Hillfoot Road"],["343","Ayr – New Cumnock"],["352","Ayr – Burnton"],["358","Ayr – Stranraer"],["360","Ayr – Stranraer"],["585","Largs – Ayr"],["X77","Hillhead – Alloway"],["X77K","Glasgow – Ayr"]];
+var ENDS={"3B":["Kincaidston Drive","James Brown Avenue"],"1":["Dunlop Terrace","Castlehill Masonhill Road"],"6":["Boswell Park","Boswell Park"],"9":["Ayr","Doonfoot"],"14":["Ayr Hospital","Irvine High Street"],"42":["Ayr Bus Station","Muirkirk"],"42A":["Ayr Bus Station","Cumnock"],"X42":["Ayr Bus Station","Muirkirk"],"43":["Ayr Bus Station","New Cumnock"],"43A":["Ayr Bus Station","Annbank"],"52":["Ayr Bus Station","Bellsbank"],"58":["Ayr Bus Station","Girvan"],"60":["Ayr Bus Station","Girvan"],"61":["Ayr Bus Station","Dunure"],"97":["Ayr Bus Station","Craig Tara"],"301":["Fullarton Street","Holmston"],"343":["Ayr Bus Station","New Cumnock"],"352":["Ayr Bus Station","Burnton"],"358":["Ayr Bus Station","Stranraer"],"360":["Ayr Bus Station","Stranraer"],"585":["Largs","Ayr Bus Station"],"X77":["Alloway Burns Museum","Hillhead University"]};
 var KEY="ayrtest.v2",S={op:null,veh:"",route:"2A",dir:0,cur:0,tab:"sell",q:"",tickets:[],seq:0},P=null,fails=0,lockUntil=0,msg="";
 try{var r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -121,31 +140,40 @@ function shift(){
   return '<div class="top"><h2>Shift</h2></div><div class="panel"><div class="stats"><div><div class="num">'+gbp(sum("cash"))+'</div><span class="mute">Cash</span></div><div><div class="num">'+gbp(sum("contactless"))+'</div><span class="mute">Contactless</span></div><div><div class="num">'+nec()+'</div><span class="mute">NEC</span></div></div></div>'+
   '<div class="panel"><p>Tickets issued: <b>'+live().length+'</b></p><p>Unsynced: <b>'+un+'</b></p></div><div class="row"><button onclick="sync()">Sync ('+un+')</button><button class="go" onclick="endShift()">End shift</button></div>'
 }
-function open(h){$("#card").innerHTML=h;$("#sheet").classList.add("on")}
-function close(){P=null;$("#sheet").classList.remove("on");view()}
+function openSheet(h){$("#card").className="card";$("#card").innerHTML=h;$("#sheet").classList.remove("fade");$("#sheet").classList.add("on")}
+var tm=null;
+function closeSheet(){clearTimeout(tm);P=null;$("#sheet").classList.remove("on","fade");$("#card").classList.remove("leave","auto");view()}
+$("#sheet").addEventListener("click",function(e){if(e.target.id==="sheet"&&$("#card").classList.contains("auto"))closeSheet()});
 function pay(id){var s=stops();P={f:id==="nec"?{id:"nec",name:"Free travel (NEC)",p:0}:FARES.filter(function(x){return x.id===id})[0],q:1,m:id==="nec"?"nec":"contactless",tender:0,to:s.length-1};if(P.to<=S.cur)P.to=Math.min(S.cur+1,s.length-1);sheet()}
 function setP(k,v){P[k]=v;sheet()}
 function sheet(){
   var tot=P.f.p*P.q,ok=P.m!=="cash"||P.tender>=tot,isN=P.m==="nec",s=stops();
-  open('<h2>'+P.f.name+'</h2><label for="to">Destination</label><select id="to" onchange="setP(\'to\',+this.value)">'+s.map(function(x,i){return i>S.cur||s.length===1?'<option value="'+i+'"'+(i===P.to?' selected':'')+'>'+x+'</option>':''}).join("")+'</select>'+
+  openSheet('<h2>'+P.f.name+'</h2><label for="to">Destination</label><select id="to" onchange="setP(\'to\',+this.value)">'+s.map(function(x,i){return i>S.cur||s.length===1?'<option value="'+i+'"'+(i===P.to?' selected':'')+'>'+x+'</option>':''}).join("")+'</select>'+
   '<div class="row" style="margin:10px 0"><button onclick="setP(\'q\',Math.max(1,P.q-1))" aria-label="Fewer passengers">-</button><div class="big" style="font-size:34px;text-align:center">'+P.q+(P.q>1?' passengers':' passenger')+'</div><button onclick="setP(\'q\',Math.min(9,P.q+1))" aria-label="More passengers">+</button></div>'+
   '<div class="big" style="font-size:52px">'+gbp(tot)+'</div>'+
   (isN?'':'<div class="seg" style="grid-template-columns:1fr 1fr"><button aria-pressed="'+(P.m==="contactless")+'" onclick="setP(\'m\',\'contactless\')">Contactless</button><button aria-pressed="'+(P.m==="cash")+'" onclick="setP(\'m\',\'cash\')">Cash</button></div>')+
   (P.m==="cash"?'<div class="seg" style="grid-template-columns:repeat(4,1fr)">'+[tot,500,1000,2000].map(function(v,i){return '<button aria-pressed="'+(P.tender===v)+'" onclick="setP(\'tender\','+v+')">'+(i?gbp(v):'Exact')+'</button>'}).join("")+'</div><p>Change due</p><div class="change num">'+(P.tender>=tot?gbp(P.tender-tot):"-")+'</div>':'')+
-  '<div class="row" style="margin-top:12px"><button onclick="close()">Cancel</button><button class="go" '+(ok?'':'disabled')+' onclick="issue()">'+(isN?"Simulate card scan":P.m==="cash"?"Take cash and issue":"Simulate tap and issue")+'</button></div>')
+  '<div class="row" style="margin-top:12px"><button onclick="closeSheet()">Cancel</button><button class="go" '+(ok?'':'disabled')+' onclick="issue()">'+(isN?"Scan card":P.m==="cash"?"Take cash and issue":"Tap card")+'</button></div>')
 }
 function issue(){
-  var s=stops();S.seq++;
+  if(P.m==="cash")return issueNow();
+  openSheet('<div class="wait"><div class="pulse"></div><h2>Waiting for scan</h2><p class="mute">'+(P.m==="nec"?"Hold the National Entitlement Card on the reader":"Hold the card on the reader")+'</p></div><button style="width:100%" onclick="closeSheet()">Cancel</button>');
+  clearTimeout(tm);tm=setTimeout(issueNow,2000)
+}
+function issueNow(){
+  if(!P)return;var s=stops();S.seq++;
   var t={n:S.op+"-"+String(S.seq).padStart(4,"0"),t:Date.now(),f:P.f.name,q:P.q,amt:P.f.p*P.q,m:P.m,route:S.route,from:s[S.cur],to:s[P.to],veh:S.veh,s:false};
   S.tickets.push(t);save();P=null;
-  open('<div class="receipt"><p>Ayr test ticket</p><p class="big">'+t.f+' x'+t.q+'</p><p>'+gbp(t.amt)+' ('+t.m+')</p><p>Route '+t.route+'</p><p>'+t.from+' to '+t.to+'</p><p>'+hhmm(t.t)+' / '+t.n+'</p></div><button class="go" style="width:100%;margin-top:12px" onclick="close()">Done</button>')
+  openSheet('<div class="done"><svg viewBox="0 0 52 52" width="64" height="64" aria-hidden="true"><circle class="ring" cx="26" cy="26" r="24" fill="none" stroke="var(--ok)" stroke-width="3"/><path class="tick" d="M14 27l8 8 16-17" fill="none" stroke="var(--ok)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="receipt print"><p>Ayr test ticket</p><p class="big">'+t.f+' x'+t.q+'</p><p>'+gbp(t.amt)+' ('+t.m+')</p><p>Route '+t.route+'</p><p>'+t.from+' to '+t.to+'</p><p>'+hhmm(t.t)+' / '+t.n+'</p></div><p class="mute" style="text-align:center;margin:10px 0 0" role="status">Ticket issued</p>');
+  $("#card").classList.add("auto");clearTimeout(tm);
+  tm=setTimeout(function(){$("#card").classList.add("leave");$("#sheet").classList.add("fade");tm=setTimeout(closeSheet,560)},1900)
 }
 function voidLast(){var l=live();if(l.length){l[l.length-1].v=true;save();view()}}
 function sync(){setTimeout(function(){S.tickets.forEach(function(t){t.s=true});save();view()},600)}
 function endShift(){
-  open('<h2>End shift</h2><div class="panel"><p>Tickets issued: <b>'+live().length+'</b></p><p>Cash to hand in: <b>'+gbp(sum("cash"))+'</b></p><p>Contactless taken: <b>'+gbp(sum("contactless"))+'</b></p><p>NEC free journeys: <b>'+nec()+'</b></p></div><div class="row"><button onclick="close()">Back</button><button class="go" onclick="signOff()">Sign off and clear shift</button></div>')
+  openSheet('<h2>End shift</h2><div class="panel"><p>Tickets issued: <b>'+live().length+'</b></p><p>Cash to hand in: <b>'+gbp(sum("cash"))+'</b></p><p>Contactless taken: <b>'+gbp(sum("contactless"))+'</b></p><p>NEC free journeys: <b>'+nec()+'</b></p></div><div class="row"><button onclick="closeSheet()">Back</button><button class="go" onclick="signOff()">Sign off and clear shift</button></div>')
 }
-function signOff(){S.op=null;S.tickets=[];S.seq=0;S.cur=0;save();close()}
+function signOff(){S.op=null;S.tickets=[];S.seq=0;S.cur=0;save();closeSheet()}
 view();
 </script>
 </body>
